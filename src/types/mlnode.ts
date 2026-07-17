@@ -66,3 +66,17 @@ export const TENSOR_OPS = new Set([
   'Flatten', 'Reshape', 'Permute', 'Transpose', 'View',
   'Unsqueeze', 'Squeeze', 'Split',
 ]);
+
+/**
+ * Layers whose forward() takes several positional tensor inputs.
+ * Maps type → ordered input port names; mirrors MULTI_INPUT_LAYERS in the
+ * Python backend (mlnode/schema/types.py). Edges into these nodes carry the
+ * port name as target_port so the backend binds arguments correctly.
+ */
+export const INPUT_PORTS: Record<string, string[]> = {
+  Transformer: ['src', 'tgt'],
+  TransformerDecoder: ['tgt', 'memory'],
+  TransformerDecoderLayer: ['tgt', 'memory'],
+  MultiheadAttention: ['query', 'key', 'value'],
+  Bilinear: ['input1', 'input2'],
+};

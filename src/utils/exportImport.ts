@@ -2,7 +2,9 @@
 
 import type { RFNode, RFEdge, ModelSettings } from '../types/reactflow';
 import type { MLnodeModel } from '../types/mlnode';
+import { INPUT_PORTS } from '../types/mlnode';
 import { MLnodeModelSchema } from './jsonSchema';
+import { layoutGraph } from './autoLayout';
 
 /**
  * Export: ReactFlow state → MLnode JSON string.
@@ -48,7 +50,8 @@ export function exportMLnode(
 
 /**
  * Import: MLnode JSON string → ReactFlow state.
- * Validates against Zod schema, then creates RF nodes with grid layout.
+ * Validates against Zod schema, creates RF nodes, then applies the layered
+ * auto-layout (the .mlnode.json format carries no positions).
  */
 export function importMLnode(json: string): {
   nodes: RFNode[];
@@ -58,10 +61,10 @@ export function importMLnode(json: string): {
   const raw = JSON.parse(json);
   const data = MLnodeModelSchema.parse(raw);
 
-  const nodes: RFNode[] = data.nodes.map((n: any, i: number) => ({
+  const nodes: RFNode[] = data.nodes.map((n: any) => ({
     id: n.id,
     type: n.type,
-    position: { x: (i % 4) * 280 + 40, y: Math.floor(i / 4) * 160 + 40 },
+    position: { x: 0, y: 0 }, // replaced by layoutGraph below
     data: {
       label: `${n.type} (${n.id})`,
       params: n.params ?? {},
@@ -77,16 +80,30 @@ export function importMLnode(json: string): {
     },
   }));
 
-  const edges: RFEdge[] = data.edges.map((e: any, i: number) => ({
-    id: `e-${i}`,
-    source: e.source,
-    sourceHandle: e.source_port ?? undefined,
-    target: e.target,
-    targetHandle: e.target_port ?? undefined,
-  }));
+  // Multi-input nodes render one handle per named port. Backfill target_port
+  // on unlabeled edges by declaration order — the same fallback the Python
+  // executor applies — so imported edges attach to the right handles.
+  const typeById = new Map(data.nodes.map((n: any) => [n.id, n.type]));
+  const portCursor = new Map<string, number>();
+  const edges: RFEdge[] = data.edges.map((e: any, i: number) => {
+    let targetHandle = e.target_port ?? undefined;
+    const ports = INPUT_PORTS[typeById.get(e.target) ?? ''];
+    if (ports && !targetHandle) {
+      const used = portCursor.get(e.target) ?? 0;
+      targetHandle = ports[Math.min(used, ports.length - 1)];
+      portCursor.set(e.target, used + 1);
+    }
+    return {
+      id: `e-${i}`,
+      source: e.source,
+      sourceHandle: e.source_port ?? undefined,
+      target: e.target,
+      targetHandle,
+    };
+  });
 
   return {
-    nodes,
+    nodes: layoutGraph(nodes, edges),
     edges,
     settings: {
       metadata: data.metadata ?? {},

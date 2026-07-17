@@ -1,6 +1,6 @@
 /** ModelCanvas — the main ReactFlow wrapper with keyboard shortcuts. */
 
-import React, { useCallback, useRef, DragEvent } from 'react';
+import React, { useCallback, useEffect, useRef, DragEvent } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -26,6 +26,14 @@ export default function ModelCanvas() {
   const undo = useGraphStore((s) => s.undo);
   const redo = useGraphStore((s) => s.redo);
   const selectNode = useUIStore((s) => s.selectNode);
+  const fitViewNonce = useUIStore((s) => s.fitViewNonce);
+
+  // Re-fit the viewport when import/tidy reshapes the graph.
+  useEffect(() => {
+    if (fitViewNonce > 0) {
+      rfRef.current?.fitView({ padding: 0.15, duration: 300 });
+    }
+  }, [fitViewNonce]);
 
   const onDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();

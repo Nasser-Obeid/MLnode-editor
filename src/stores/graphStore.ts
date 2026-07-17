@@ -11,6 +11,7 @@ import {
 } from 'reactflow';
 import type { RFNode, RFEdge, RFNodeData, ModelSettings } from '../types/reactflow';
 import { NODE_DEFAULTS } from '../constants/nodeDefaults';
+import { layoutGraph } from '../utils/autoLayout';
 
 interface HistoryEntry {
   nodes: RFNode[];
@@ -34,6 +35,7 @@ interface GraphState {
   setOutputNode: (nodeId: string) => void;
   setSettings: (s: Partial<ModelSettings>) => void;
   setGraph: (nodes: RFNode[], edges: RFEdge[], settings: ModelSettings) => void;
+  tidyLayout: () => void;
   // Undo/redo
   undo: () => void;
   redo: () => void;
@@ -143,6 +145,11 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     }
     nodeCounter = Math.max(maxCounter, nodes.length);
     set({ nodes, edges, settings, past: [], future: [] });
+  },
+
+  tidyLayout: () => {
+    get().pushHistory();
+    set({ nodes: layoutGraph(get().nodes, get().edges) });
   },
 
   pushHistory: () => {

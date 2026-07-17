@@ -1,7 +1,7 @@
 /** TopToolbar — export, import, validate, and model settings. */
 
 import React, { useRef } from 'react';
-import { Download, Upload, ShieldCheck, Settings, Undo2, Redo2 } from 'lucide-react';
+import { Download, Upload, ShieldCheck, Settings, Undo2, Redo2, Wand2 } from 'lucide-react';
 import { useGraphStore } from '../../stores/graphStore';
 import { useUIStore } from '../../stores/uiStore';
 import { exportMLnode, importMLnode } from '../../utils/exportImport';
@@ -13,9 +13,11 @@ export default function TopToolbar() {
   const settings = useGraphStore((s) => s.settings);
   const setSettings = useGraphStore((s) => s.setSettings);
   const setGraph = useGraphStore((s) => s.setGraph);
+  const tidyLayout = useGraphStore((s) => s.tidyLayout);
   const undo = useGraphStore((s) => s.undo);
   const redo = useGraphStore((s) => s.redo);
   const addToast = useUIStore((s) => s.addToast);
+  const requestFitView = useUIStore((s) => s.requestFitView);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -48,6 +50,7 @@ export default function TopToolbar() {
       try {
         const result = importMLnode(ev.target?.result as string);
         setGraph(result.nodes, result.edges, result.settings);
+        requestFitView();
         addToast('Imported successfully', 'success');
       } catch (err: any) {
         addToast(`Import failed: ${err.message}`, 'error');
@@ -55,6 +58,12 @@ export default function TopToolbar() {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleTidy = () => {
+    tidyLayout();
+    requestFitView();
+    addToast('Layout tidied', 'success');
   };
 
   const handleValidate = () => {
@@ -121,6 +130,7 @@ export default function TopToolbar() {
       <div className="w-px h-5 bg-panel-border mx-1" />
 
       {/* Actions */}
+      <ToolbarButton icon={<Wand2 size={14} />} label="Tidy" onClick={handleTidy} />
       <ToolbarButton icon={<ShieldCheck size={14} />} label="Validate" onClick={handleValidate} />
       <ToolbarButton icon={<Upload size={14} />} label="Import" onClick={handleImport} />
       <ToolbarButton icon={<Download size={14} />} label="Export" onClick={handleExport} accent />

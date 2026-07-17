@@ -80,6 +80,7 @@ export const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'Softplus', label: 'Softplus' },
       { type: 'Softshrink', label: 'Softshrink' },
       { type: 'Softsign', label: 'Softsign' },
+      { type: 'ReLU', label: 'ReLU' },
       { type: 'GELU', label: 'GELU' },
       { type: 'Sigmoid', label: 'Sigmoid' },
       { type: 'Tanh', label: 'Tanh' },
@@ -106,6 +107,9 @@ export const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'BatchNorm1d', label: 'BatchNorm1d' },
       { type: 'BatchNorm2d', label: 'BatchNorm2d' },
       { type: 'BatchNorm3d', label: 'BatchNorm3d' },
+      { type: 'LazyBatchNorm1d', label: 'LazyBatchNorm1d' },
+      { type: 'LazyBatchNorm2d', label: 'LazyBatchNorm2d' },
+      { type: 'LazyBatchNorm3d', label: 'LazyBatchNorm3d' },
       { type: 'LayerNorm', label: 'LayerNorm' },
       { type: 'GroupNorm', label: 'GroupNorm' },
       { type: 'SyncBatchNorm', label: 'SyncBatchNorm' },
@@ -123,7 +127,6 @@ export const NODE_CATEGORIES: NodeCategory[] = [
     name: 'Recurrent Layers',
     color: '#103e88',
     types: [
-      { type: 'RNNBase', label: 'RNNBase' },
       { type: 'RNN', label: 'RNN' },
       { type: 'LSTM', label: 'LSTM' },
       { type: 'GRU', label: 'GRU' },
@@ -137,8 +140,8 @@ export const NODE_CATEGORIES: NodeCategory[] = [
     color: '#fcb232',
     types: [
       { type: 'Transformer', label: 'Transformer' },
-      //{ type: 'TransformerEncoder', label: 'TransformerEncoder' },
-      //{ type: 'TransformerDecoder', label: 'TransformerDecoder' },
+      { type: 'TransformerEncoder', label: 'TransformerEncoder' },
+      { type: 'TransformerDecoder', label: 'TransformerDecoder' },
       { type: 'TransformerEncoderLayer', label: 'TransformerEncoderLayer' },
       { type: 'TransformerDecoderLayer', label: 'TransformerDecoderLayer' },
     ],
@@ -171,6 +174,14 @@ export const NODE_CATEGORIES: NodeCategory[] = [
     types: [
       { type: 'Embedding', label: 'Embedding' },
       { type: 'EmbeddingBag', label: 'EmbeddingBag' },
+    ],
+  },
+  {
+    name: 'Vision Ops',
+    color: '#14b8a6',
+    types: [
+      { type: 'PixelShuffle', label: 'PixelShuffle' },
+      { type: 'PixelUnshuffle', label: 'PixelUnshuffle' },
     ],
   },
   {
@@ -224,7 +235,11 @@ export function getNodeColor(type: string): string {
   if (type === 'Block') return '#06b6d4';
   if (type === 'custom') return '#64748b';
   if (type === 'HF_Pretrained' || type === 'HF_Config') return '#f97316';
-  if (['MultiheadAttention', 'TransformerEncoderLayer', 'TransformerDecoderLayer'].includes(type)) return '#f59e0b';
+  if ([
+    'MultiheadAttention', 'Transformer', 'TransformerEncoder', 'TransformerDecoder',
+    'TransformerEncoderLayer', 'TransformerDecoderLayer',
+  ].includes(type)) return '#f59e0b';
+  if (['PixelShuffle', 'PixelUnshuffle'].includes(type)) return '#14b8a6';
   if (['Add', 'Subtract', 'Multiply', 'Divide', 'Concat', 'Stack'].includes(type)) return '#ec4899';
   if (['Flatten', 'Reshape', 'Permute', 'Transpose', 'View', 'Unsqueeze', 'Squeeze', 'Split'].includes(type)) return '#8b5cf6';
   return '#3b82f6';

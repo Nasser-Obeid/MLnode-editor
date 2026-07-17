@@ -4,6 +4,7 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import type { RFNodeData } from '../../types/reactflow';
 import { getNodeColor } from '../../constants/nodeCategories';
+import { INPUT_PORTS } from '../../types/mlnode';
 import { useGraphStore } from '../../stores/graphStore';
 import { useUIStore } from '../../stores/uiStore';
 
@@ -15,6 +16,8 @@ const MLnodeNode = memo(({ id, data, type, selected }: NodeProps<RFNodeData>) =>
   const isInput = type === 'Input';
   const color = getNodeColor(type ?? 'Linear');
   const hasOutputPorts = data.outputs && data.outputs.length > 0;
+  const inputPorts = INPUT_PORTS[type ?? ''];
+  const portRows = Math.max(inputPorts?.length ?? 0, data.outputs?.length ?? 0);
 
   return (
     <div
@@ -22,6 +25,7 @@ const MLnodeNode = memo(({ id, data, type, selected }: NodeProps<RFNodeData>) =>
       className="relative group"
       style={{
         minWidth: 140,
+        minHeight: portRows > 0 ? 34 + portRows * 24 : undefined,
         background: '#1a1a22',
         border: `2px solid ${selected ? '#fff' : isOutput ? '#facc15' : color}`,
         borderRadius: 10,
@@ -126,20 +130,53 @@ const MLnodeNode = memo(({ id, data, type, selected }: NodeProps<RFNodeData>) =>
         )}
       </div>
 
-      {/* Input handle */}
-      {type !== 'Input' && (
-        <Handle
-          type="target"
-          position={Position.Left}
-          style={{
-            width: 10,
-            height: 10,
-            background: '#27272f',
-            border: `2px solid ${color}`,
-            borderRadius: '50%',
-          }}
-        />
-      )}
+      {/* Input handles — multi-input layers get one named handle per port
+          (the handle id becomes target_port in the exported JSON) */}
+      {type !== 'Input' &&
+        (inputPorts ? (
+          inputPorts.map((port, i) => (
+            <Handle
+              key={port}
+              type="target"
+              position={Position.Left}
+              id={port}
+              style={{
+                width: 10,
+                height: 10,
+                background: '#27272f',
+                border: `2px solid ${color}`,
+                borderRadius: '50%',
+                top: 30 + i * 24,
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 14,
+                  top: -3,
+                  fontSize: 9,
+                  color: '#71717a',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                }}
+              >
+                {port}
+              </span>
+            </Handle>
+          ))
+        ) : (
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={{
+              width: 10,
+              height: 10,
+              background: '#27272f',
+              border: `2px solid ${color}`,
+              borderRadius: '50%',
+            }}
+          />
+        ))}
 
       {/* Output handles */}
       {hasOutputPorts ? (
@@ -231,8 +268,8 @@ const allTypes = [
     "LazyInstanceNorm1d", "LazyInstanceNorm2d", "LazyInstanceNorm3d",
     "LayerNorm", "LocalResponseNorm", "RMSNorm",
     
-    //# Recurrent Layers
-    "RNNBase", "RNN", "LSTM", "GRU",
+    //# Recurrent Layers (RNNBase removed — abstract base, not executable)
+    "RNN", "LSTM", "GRU",
     "RNNCell", "LSTMCell", "GRUCell",
     
     //# Transformer Layers
@@ -251,7 +288,9 @@ const allTypes = [
     "Embedding", "EmbeddingBag",
 
     //# Composable blocks
-    "Block", 
+    "Block",
+    //# Custom layers
+    "custom",
     //# Reduction ops
     "Add", "Subtract", "Multiply", "Divide", "Concat", "Stack",
     //# Element wise ops

@@ -49,7 +49,7 @@ export const NODE_DEFAULTS: Record<string, Record<string, any>> = {
   PReLU: {},
   ReLU6: {},
   RReLU: {},
-  MultiheadAttention: { embed_dim: 512, num_heads: 8 },
+  MultiheadAttention: { embed_dim: 512, num_heads: 8, batch_first: true },
   SELU: {},
   CELU: {},
   SiLU: {},
@@ -57,6 +57,7 @@ export const NODE_DEFAULTS: Record<string, Record<string, any>> = {
   Softplus: {},
   Softshrink: {},
   Softsign: {},
+  ReLU: {},
   GELU: {},
   Sigmoid: {},
   Tanh: {},
@@ -87,20 +88,30 @@ export const NODE_DEFAULTS: Record<string, Record<string, any>> = {
   LayerNorm: { normalized_shape: [256] },
   LocalResponseNorm: { size: 16 },
   RMSNorm: { normalized_shape: 16 },
-  // Recurrent Layers
-  RNNBase: { mode: 'LSTM', input_size: 256, hidden_size: 128 },
-  RNN: { input_size: 256, hidden_size: 128 },
-  LSTM: { input_size: 256, hidden_size: 128 },
-  GRU: { input_size: 256, hidden_size: 128 },
+  // Recurrent Layers — batch_first matches the (B, Seq, D) shape convention
+  // (RNNBase removed: abstract base class, not executable)
+  RNN: { input_size: 256, hidden_size: 128, batch_first: true },
+  LSTM: { input_size: 256, hidden_size: 128, batch_first: true },
+  GRU: { input_size: 256, hidden_size: 128, batch_first: true },
   RNNCell: { input_size: 256, hidden_size: 128 },
   LSTMCell: { input_size: 256, hidden_size: 128 },
   GRUCell: { input_size: 256, hidden_size: 128 },
-  // Transformer Layers 
-  Transformer: {},
-  //TransformerEncoder: { encoder_layer: [TransformerEncoderLayer: { d_model: 512, nhead: 8 }], num_layers: 6},
-  //TransformerDecoder: { d_model: 512, nhead: 8 },
-  TransformerEncoderLayer: { d_model: 512, nhead: 8 },
-  TransformerDecoderLayer: { d_model: 512, nhead: 8 },
+  // Transformer Layers — TransformerEncoder/Decoder take flat layer params
+  // plus num_layers/norm; the backend composes the stack (layers/registry.py).
+  Transformer: {
+    d_model: 512, nhead: 8, num_encoder_layers: 6, num_decoder_layers: 6,
+    dim_feedforward: 2048, dropout: 0.1, batch_first: true,
+  },
+  TransformerEncoder: {
+    d_model: 512, nhead: 8, dim_feedforward: 2048, dropout: 0.1,
+    batch_first: true, num_layers: 6, norm: false,
+  },
+  TransformerDecoder: {
+    d_model: 512, nhead: 8, dim_feedforward: 2048, dropout: 0.1,
+    batch_first: true, num_layers: 6, norm: false,
+  },
+  TransformerEncoderLayer: { d_model: 512, nhead: 8, batch_first: true },
+  TransformerDecoderLayer: { d_model: 512, nhead: 8, batch_first: true },
   // Linear Layers
   Identity: {},
   Linear: { in_features: 256, out_features: 128 },
@@ -116,6 +127,9 @@ export const NODE_DEFAULTS: Record<string, Record<string, any>> = {
   // Sparse Layers
   Embedding: { num_embeddings: 10000, embedding_dim: 256 },
   EmbeddingBag: { num_embeddings: 10000, embedding_dim: 256 },
+  // Vision Ops
+  PixelShuffle: { upscale_factor: 2 },
+  PixelUnshuffle: { downscale_factor: 2 },
   // Reduction Ops — no learnable params
   Add: {},
   Subtract: {},
